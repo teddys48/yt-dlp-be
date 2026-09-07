@@ -26,8 +26,8 @@ Set the environment variables in `.env` (or let the app use defaults):
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
-DB_PASSWORD=galau712
-DB_NAME=url_shortener
+DB_PASSWORD=postgres
+DB_NAME=jobs
 DB_SSLMODE=disable
 
 # Redis Cache Configuration
@@ -60,6 +60,7 @@ docker-compose up --build
 ### Option 2: Local Development
 
 #### Prerequisites
+
 - Go 1.24+
 - PostgreSQL & Redis running
 - `yt-dlp` and `ffmpeg` installed on your PATH
@@ -67,16 +68,19 @@ docker-compose up --build
 #### Steps
 
 1. Run unit tests:
+
 ```bash
 go test -v ./...
 ```
 
 2. Start the API server:
+
 ```bash
 go run ./cmd/api
 ```
 
 3. Start the Worker process in a separate terminal:
+
 ```bash
 go run ./cmd/worker
 ```
@@ -86,8 +90,10 @@ go run ./cmd/worker
 ## 📡 API Reference
 
 ### 1. Health Check
+
 - **Endpoint**: `GET /health`
 - **Response**:
+
 ```json
 {
   "postgres": "connected",
@@ -99,16 +105,20 @@ go run ./cmd/worker
 ---
 
 ### 2. Extract Metadata
+
 Extract video metadata (cached in Redis for 24h). Rate limited.
 
 - **Endpoint**: `POST /api/v1/metadata`
 - **Request Body**:
+
 ```json
 {
   "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 }
 ```
+
 - **Response**:
+
 ```json
 {
   "source": "extracted",
@@ -126,17 +136,21 @@ Extract video metadata (cached in Redis for 24h). Rate limited.
 ---
 
 ### 3. Enqueue Download Job
+
 Enqueue a download task in the Redis queue. Rate limited.
 
 - **Endpoint**: `POST /api/v1/jobs`
 - **Request Body**:
+
 ```json
 {
   "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
   "format": "best"
 }
 ```
+
 - **Response**:
+
 ```json
 {
   "message": "Job successfully enqueued",
@@ -154,10 +168,12 @@ Enqueue a download task in the Redis queue. Rate limited.
 ---
 
 ### 4. Stream Job Progress (SSE)
+
 Receive real-time progress events for a download job.
 
 - **Endpoint**: `GET /api/v1/jobs/:id/progress`
 - **Response**: `text/event-stream`
+
 ```event-stream
 event: progress
 data: {"job_id":"f516a5b6-7c98-4a92-8051-bdc115cfd37e","status":"processing","progress":45.2,"speed":"3.2MiB/s","eta":"00:10","timestamp":"2026-09-07T14:40:05Z"}
@@ -166,10 +182,12 @@ data: {"job_id":"f516a5b6-7c98-4a92-8051-bdc115cfd37e","status":"processing","pr
 ---
 
 ### 5. Check Job Status
+
 Query current status and output details from PostgreSQL.
 
 - **Endpoint**: `GET /api/v1/jobs/:id`
 - **Response**:
+
 ```json
 {
   "job": {
@@ -188,10 +206,12 @@ Query current status and output details from PostgreSQL.
 ---
 
 ### 6. Cancel Job
+
 Cancel a pending or running download job.
 
 - **Endpoint**: `POST /api/v1/jobs/:id/cancel`
 - **Response**:
+
 ```json
 {
   "message": "Job cancellation request sent successfully",
