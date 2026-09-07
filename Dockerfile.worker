@@ -1,0 +1,35 @@
+# Multi-stage Dockerfile for Worker Service
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependency definition
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source files
+COPY . .
+
+# Build Worker binary
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/worker ./cmd/worker
+
+# Final runtime image with yt-dlp and ffmpeg
+FROM alpine:3.20
+
+WORKDIR /app
+
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    ffmpeg \
+    python3 \
+    py3-pip \
+    py3-mutagen \
+    nodejs \
+    curl \
+    && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
+    && chmod a+rx /usr/local/bin/yt-dlp
+
+COPY --from=builder /app/worker /app/worker
+
+CMD ["/app/worker"]

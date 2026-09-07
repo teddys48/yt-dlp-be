@@ -1,0 +1,40 @@
+# Compiled Binaries
+/api
+/worker
+*.exe
+*.exe?
+*.dll
+*.so
+*.dylib
+
+# Downloaded files & Storage
+/downloads/*
+!/downloads/.gitkeep
+/uploads/*
+!/uploads/.gitkeep
+*.mp4
+*.webm
+*.opus
+*.mp3
+*.m4a
+*.mkv
+*.flac
+*.wav
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs & temporary files
+*.log
+tmp/
+scratch/
