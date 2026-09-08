@@ -29,7 +29,9 @@ type Config struct {
 	DownloadDir         string
 	JobTimeoutMinutes   time.Duration
 	RateLimitRequests   int
-	RateLimitWindowSec int
+	RateLimitWindowSec  int
+	CleanupIntervalHour time.Duration
+	FileRetentionHours  time.Duration
 
 	// Logger Config
 	LogLevel  string
@@ -45,7 +47,7 @@ func LoadConfig() *Config {
 		DBPort:              getEnv("DB_PORT", "5432"),
 		DBUser:              getEnv("DB_USER", "postgres"),
 		DBPassword:          getEnv("DB_PASSWORD", "galau712"),
-		DBName:              getEnv("DB_NAME", "url_shortener"),
+		DBName:              getEnv("DB_NAME", "yt-dlp"),
 		DBSSLMode:           getEnv("DB_SSLMODE", "disable"),
 
 		RedisHost:           getEnv("REDIS_HOST", "localhost"),
@@ -58,7 +60,9 @@ func LoadConfig() *Config {
 		DownloadDir:         getEnv("DOWNLOAD_DIR", "./downloads"),
 		JobTimeoutMinutes:   time.Duration(getEnvAsInt("JOB_TIMEOUT_MINUTES", 15)) * time.Minute,
 		RateLimitRequests:   getEnvAsInt("RATE_LIMIT_REQUESTS", 10),
-		RateLimitWindowSec: getEnvAsInt("RATE_LIMIT_WINDOW_SEC", 60),
+		RateLimitWindowSec:  getEnvAsInt("RATE_LIMIT_WINDOW_SEC", 60),
+		CleanupIntervalHour: time.Duration(getEnvAsInt("CLEANUP_INTERVAL_HOURS", 1)) * time.Hour,
+		FileRetentionHours:  time.Duration(getEnvAsInt("FILE_RETENTION_HOURS", 24)) * time.Hour,
 
 		LogLevel:  getEnv("LOG_LEVEL", "info"),
 		LogFormat: getEnv("LOG_FORMAT", "text"),

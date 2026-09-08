@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
+	"yt-dlp-be/internal/cleanup"
 	"yt-dlp-be/internal/config"
 	"yt-dlp-be/internal/db"
-	"yt-dlp-be/internal/downloader"
 	"yt-dlp-be/internal/handler"
 	"yt-dlp-be/internal/logger"
 	"yt-dlp-be/internal/queue"
@@ -40,12 +40,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 3. Initialize Helpers
-	dl := downloader.NewDownloader(cfg.DownloadDir)
+	// 3. Initialize Producer & Handler (Zero local yt-dlp dependency in API)
 	producer := queue.NewProducer(database, redisClient)
-	h := handler.NewHandler(cfg, database, redisClient, producer, dl)
+	h := handler.NewHandler(cfg, database, redisClient, producer)
 
-	// 4. Setup Router
+	// 4. Start Background 24-Hour File Cleanup Service
+	cleanupService := cleanup.NewCleanupService(cfg, database)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go cleanupService.Start(ctx)
+
+	// 5. Setup Router
 	router := handler.SetupRouter(cfg, h, redisClient)
 
 	srv := &http.Server{
@@ -68,10 +74,10 @@ func main() {
 
 	slog.Info("Shutting down API server...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := srv.Shutdown(shutdownCtx); err != nil {
 		slog.Error("Server forced to shutdown", slog.String("error", err.Error()))
 	}
 

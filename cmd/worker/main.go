@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"yt-dlp-be/internal/cleanup"
 	"yt-dlp-be/internal/config"
 	"yt-dlp-be/internal/db"
 	"yt-dlp-be/internal/downloader"
@@ -42,6 +43,10 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// 4. Start Background 24-Hour File Cleanup Service
+	cleanupService := cleanup.NewCleanupService(cfg, database)
+	go cleanupService.Start(ctx)
 
 	// Graceful shutdown on signal
 	quit := make(chan os.Signal, 1)

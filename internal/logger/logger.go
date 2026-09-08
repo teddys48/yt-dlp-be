@@ -63,48 +63,65 @@ func RequestIDMiddleware() gin.HandlerFunc {
 	}
 }
 
-// GinLoggerMiddleware logs incoming HTTP requests using slog with duration, status, and request_id
+// GinLoggerMiddleware logs incoming HTTP request and outgoing response as 2 separate structured log events
 func GinLoggerMiddleware(logger *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
 		rawQuery := c.Request.URL.RawQuery
-
-		c.Next()
-
-		latency := time.Since(start)
-		clientIP := c.ClientIP()
-		method := c.Request.Method
-		statusCode := c.Writer.Status()
-		errorMessage := c.Errors.ByType(gin.ErrorTypePrivate).String()
-
 		if rawQuery != "" {
 			path = path + "?" + rawQuery
 		}
 
+		clientIP := c.ClientIP()
+		method := c.Request.Method
+		userAgent := c.Request.UserAgent()
 		reqID, _ := c.Request.Context().Value(RequestIDKey).(string)
 
-		attrs := []slog.Attr{
+		// 1. Log HTTP Request Event (Incoming)
+		reqAttrs := []slog.Attr{
+			slog.String("request_id", reqID),
+			slog.String("method", method),
+			slog.String("path", path),
+			slog.String("client_ip", clientIP),
+		}
+		if userAgent != "" {
+			reqAttrs = append(reqAttrs, slog.String("user_agent", userAgent))
+		}
+
+		logger.LogAttrs(c.Request.Context(), slog.LevelInfo, "HTTP Request", reqAttrs...)
+
+		// Execute downstream handlers
+		c.Next()
+
+		// 2. Log HTTP Response Event (Outgoing)
+		latency := time.Since(start)
+		statusCode := c.Writer.Status()
+		bodySize := c.Writer.Size()
+		errorMessage := c.Errors.ByType(gin.ErrorTypePrivate).String()
+
+		resAttrs := []slog.Attr{
 			slog.String("request_id", reqID),
 			slog.String("method", method),
 			slog.String("path", path),
 			slog.Int("status", statusCode),
 			slog.Duration("latency", latency),
 			slog.String("client_ip", clientIP),
+			slog.Int("size_bytes", bodySize),
 		}
 
 		if errorMessage != "" {
-			attrs = append(attrs, slog.String("error", errorMessage))
+			resAttrs = append(resAttrs, slog.String("error", errorMessage))
 		}
 
-		msg := "HTTP Request"
+		msg := "HTTP Response"
 		switch {
 		case statusCode >= 500:
-			logger.LogAttrs(c.Request.Context(), slog.LevelError, msg, attrs...)
+			logger.LogAttrs(c.Request.Context(), slog.LevelError, msg, resAttrs...)
 		case statusCode >= 400:
-			logger.LogAttrs(c.Request.Context(), slog.LevelWarn, msg, attrs...)
+			logger.LogAttrs(c.Request.Context(), slog.LevelWarn, msg, resAttrs...)
 		default:
-			logger.LogAttrs(c.Request.Context(), slog.LevelInfo, msg, attrs...)
+			logger.LogAttrs(c.Request.Context(), slog.LevelInfo, msg, resAttrs...)
 		}
 	}
 }

@@ -8,13 +8,13 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: galau712
-      POSTGRES_DB: url_shortener
+      POSTGRES_DB: yt-dlp
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d url_shortener"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d yt-dlp"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -46,7 +46,7 @@ services:
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: galau712
-      DB_NAME: url_shortener
+      DB_NAME: yt-dlp
       DB_SSLMODE: disable
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -55,6 +55,8 @@ services:
       REDIS_TTL_HOURS: 24
       PORT: 8080
       DOWNLOAD_DIR: /app/downloads
+      CLEANUP_INTERVAL_HOURS: 1
+      FILE_RETENTION_HOURS: 24
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,7 +76,7 @@ services:
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: galau712
-      DB_NAME: url_shortener
+      DB_NAME: yt-dlp
       DB_SSLMODE: disable
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -83,6 +85,8 @@ services:
       REDIS_TTL_HOURS: 24
       JOB_TIMEOUT_MINUTES: 15
       DOWNLOAD_DIR: /app/downloads
+      CLEANUP_INTERVAL_HOURS: 1
+      FILE_RETENTION_HOURS: 24
     depends_on:
       postgres:
         condition: service_healthy

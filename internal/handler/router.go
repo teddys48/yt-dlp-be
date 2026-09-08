@@ -52,8 +52,18 @@ func SetupRouter(cfg *config.Config, h *Handler, redisClient *rdb.RedisClient) *
 		}
 
 		v1.GET("/jobs/:id", h.GetJobStatus)
+		v1.GET("/jobs/:id/file", h.DownloadFile)
 		v1.POST("/jobs/:id/cancel", h.CancelJob)
 		v1.GET("/jobs/:id/progress", h.StreamJobProgress)
+
+		// Per-IP Downloads History Endpoints (query param, body, or path param)
+		v1.GET("/my-downloads", h.GetMyDownloads)
+		v1.GET("/my-downloads/:ip", h.GetMyDownloads)
+		v1.GET("/downloads/ip/:ip", h.GetMyDownloads)
+
+		// yt-dlp Version Management Endpoints
+		v1.GET("/yt-dlp/version", h.GetYtDlpVersion)
+		v1.POST("/yt-dlp/update", h.UpdateYtDlp)
 	}
 
 	return r

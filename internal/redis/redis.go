@@ -14,9 +14,14 @@ import (
 )
 
 const (
-	QueueName          = "yt_dlp_job_queue"
+	QueueName             = "yt_dlp_job_queue"
+	MetaQueueName         = "yt_dlp_meta_queue"
 	ProgressChannelPrefix = "job:progress:"
 	CancelChannelPrefix   = "job:cancel:"
+	WorkerCmdChannel      = "worker:cmd:channel"
+	WorkerCmdResPrefix    = "worker:cmd:res:"
+	MetaResPrefix         = "meta:res:"
+	YtDlpVersionKey       = "yt_dlp:version"
 )
 
 type RedisClient struct {
@@ -59,6 +64,103 @@ func (r *RedisClient) DequeueJob(ctx context.Context, timeout time.Duration) (st
 		return "", fmt.Errorf("invalid queue payload")
 	}
 	return res[1], nil
+}
+
+// Metadata Queue methods
+type MetaRequestPayload struct {
+	ID  string `json:"id"`
+	URL string `json:"url"`
+}
+
+type MetaResponsePayload struct {
+	ID       string                 `json:"id"`
+	Metadata *model.MetadataResponse `json:"metadata,omitempty"`
+	Error    string                 `json:"error,omitempty"`
+}
+
+func (r *RedisClient) EnqueueMetaRequest(ctx context.Context, payload MetaRequestPayload) error {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	return r.Client.RPush(ctx, MetaQueueName, string(data)).Err()
+}
+
+func (r *RedisClient) DequeueMetaRequest(ctx context.Context, timeout time.Duration) (*MetaRequestPayload, error) {
+	res, err := r.Client.BLPop(ctx, timeout, MetaQueueName).Result()
+	if err != nil {
+		return nil, err
+	}
+	if len(res) < 2 {
+		return nil, fmt.Errorf("invalid meta queue payload")
+	}
+	var payload MetaRequestPayload
+	if err := json.Unmarshal([]byte(res[1]), &payload); err != nil {
+		return nil, err
+	}
+	return &payload, nil
+}
+
+func (r *RedisClient) PublishMetaResponse(ctx context.Context, payload MetaResponsePayload) error {
+	channel := MetaResPrefix + payload.ID
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	return r.Client.Publish(ctx, channel, string(data)).Err()
+}
+
+func (r *RedisClient) SubscribeMetaResponse(ctx context.Context, requestID string) *redis.PubSub {
+	channel := MetaResPrefix + requestID
+	return r.Client.Subscribe(ctx, channel)
+}
+
+// Worker Command (Version / Update) RPC
+type WorkerCmdPayload struct {
+	ID     string `json:"id"`
+	Action string `json:"action"` // "get_version", "update_ytdlp"
+}
+
+type WorkerCmdResponse struct {
+	ID         string `json:"id"`
+	OldVersion string `json:"old_version,omitempty"`
+	NewVersion string `json:"new_version,omitempty"`
+	Error      string `json:"error,omitempty"`
+}
+
+func (r *RedisClient) PublishWorkerCmd(ctx context.Context, payload WorkerCmdPayload) error {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	return r.Client.Publish(ctx, WorkerCmdChannel, string(data)).Err()
+}
+
+func (r *RedisClient) SubscribeWorkerCmd(ctx context.Context) *redis.PubSub {
+	return r.Client.Subscribe(ctx, WorkerCmdChannel)
+}
+
+func (r *RedisClient) PublishWorkerCmdResponse(ctx context.Context, payload WorkerCmdResponse) error {
+	channel := WorkerCmdResPrefix + payload.ID
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	return r.Client.Publish(ctx, channel, string(data)).Err()
+}
+
+func (r *RedisClient) SubscribeWorkerCmdResponse(ctx context.Context, cmdID string) *redis.PubSub {
+	channel := WorkerCmdResPrefix + cmdID
+	return r.Client.Subscribe(ctx, channel)
+}
+
+// Cached Version helpers
+func (r *RedisClient) GetCachedYtDlpVersion(ctx context.Context) (string, error) {
+	return r.Client.Get(ctx, YtDlpVersionKey).Result()
+}
+
+func (r *RedisClient) SetCachedYtDlpVersion(ctx context.Context, version string) error {
+	return r.Client.Set(ctx, YtDlpVersionKey, version, 24*time.Hour).Err()
 }
 
 // Metadata Caching

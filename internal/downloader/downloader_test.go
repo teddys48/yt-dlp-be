@@ -51,7 +51,7 @@ func TestBuildYtDlpArgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := buildYtDlpArgs("test-job-id", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", tt.format, "./downloads")
+			args := buildYtDlpArgs("./downloads/test-job-id_title.ext", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", tt.format)
 
 			hasX := false
 			hasAddMetadata := false
