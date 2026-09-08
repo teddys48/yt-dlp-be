@@ -38,3 +38,6 @@
 *.log
 tmp/
 scratch/
+
+
+cookies.txt

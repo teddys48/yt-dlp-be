@@ -21,24 +21,46 @@ import (
 type ProgressCallback func(percent float64, speed string, eta string)
 
 type Downloader struct {
-	DownloadDir string
+	DownloadDir   string
+	CookiesPath   string
+	ExtractorArgs string
 }
 
-func NewDownloader(downloadDir string) *Downloader {
+func NewDownloader(downloadDir string, cookiesPath string, extractorArgs string) *Downloader {
 	_ = os.MkdirAll(downloadDir, 0755)
-	return &Downloader{DownloadDir: downloadDir}
+	if extractorArgs == "" {
+		extractorArgs = "youtube:player_client=android,web"
+	}
+	return &Downloader{
+		DownloadDir:   downloadDir,
+		CookiesPath:   cookiesPath,
+		ExtractorArgs: extractorArgs,
+	}
 }
 
 // ExtractMetadata executes yt-dlp --dump-json
 func (d *Downloader) ExtractMetadata(ctx context.Context, targetURL string) (*model.MetadataResponse, error) {
-	cmd := getYtDlpCmd(ctx,
+	args := []string{
 		"--dump-json",
 		"--no-playlist",
 		"--no-warnings",
 		"--no-update",
 		"--js-runtimes", "node",
-		targetURL,
-	)
+	}
+
+	if d.ExtractorArgs != "" {
+		args = append(args, "--extractor-args", d.ExtractorArgs)
+	}
+
+	if d.CookiesPath != "" {
+		if _, err := os.Stat(d.CookiesPath); err == nil {
+			args = append(args, "--cookies", d.CookiesPath)
+		}
+	}
+
+	args = append(args, targetURL)
+
+	cmd := getYtDlpCmd(ctx, args...)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -107,7 +129,7 @@ func (d *Downloader) Download(
 
 	outputTemplate := filepath.Join(d.DownloadDir, fmt.Sprintf("%s_%%(title).50s.%%(ext)s", jobID))
 
-	args := buildYtDlpArgs(outputTemplate, targetURL, format)
+	args := buildYtDlpArgs(outputTemplate, targetURL, format, d.CookiesPath, d.ExtractorArgs)
 
 	cmd := getYtDlpCmd(ctx, args...)
 
@@ -290,17 +312,28 @@ func sanitizeFilename(name string) string {
 	return cleaned
 }
 
-func buildYtDlpArgs(outputTemplate, targetURL, format string) []string {
+func buildYtDlpArgs(outputTemplate, targetURL, format, cookiesPath, extractorArgs string) []string {
+	if extractorArgs == "" {
+		extractorArgs = "youtube:player_client=android,web"
+	}
+
 	args := []string{
 		"--newline",
 		"--no-update",
 		"--js-runtimes", "node",
+		"--extractor-args", extractorArgs,
 		"--add-metadata",
 		"--embed-thumbnail",
 		"--convert-thumbnails", "jpg",
 		"--progress-template", "%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s",
 		"-o", outputTemplate,
 		"--no-playlist",
+	}
+
+	if cookiesPath != "" {
+		if _, err := os.Stat(cookiesPath); err == nil {
+			args = append(args, "--cookies", cookiesPath)
+		}
 	}
 
 	normFormat := strings.ToLower(strings.TrimSpace(format))

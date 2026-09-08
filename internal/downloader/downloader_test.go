@@ -51,11 +51,12 @@ func TestBuildYtDlpArgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := buildYtDlpArgs("./downloads/test-job-id_title.ext", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", tt.format)
+			args := buildYtDlpArgs("./downloads/test-job-id_title.ext", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", tt.format, "", "youtube:player_client=android,web")
 
 			hasX := false
 			hasAddMetadata := false
 			hasEmbedThumbnail := false
+			hasExtractorArgs := false
 			foundAudioFmt := ""
 			foundMergeFmt := ""
 
@@ -68,6 +69,9 @@ func TestBuildYtDlpArgs(t *testing.T) {
 				}
 				if arg == "--embed-thumbnail" {
 					hasEmbedThumbnail = true
+				}
+				if arg == "--extractor-args" {
+					hasExtractorArgs = true
 				}
 				if arg == "--audio-format" && i+1 < len(args) {
 					foundAudioFmt = args[i+1]
@@ -82,6 +86,9 @@ func TestBuildYtDlpArgs(t *testing.T) {
 			}
 			if !hasEmbedThumbnail {
 				t.Errorf("buildYtDlpArgs() missing --embed-thumbnail flag")
+			}
+			if !hasExtractorArgs {
+				t.Errorf("buildYtDlpArgs() missing --extractor-args flag")
 			}
 			if hasX != tt.wantHasX {
 				t.Errorf("buildYtDlpArgs() hasX = %v, want %v", hasX, tt.wantHasX)

@@ -38,7 +38,7 @@ func main() {
 	}
 
 	// 3. Initialize Downloader & Worker Engine
-	dl := downloader.NewDownloader(cfg.DownloadDir)
+	dl := downloader.NewDownloader(cfg.DownloadDir, cfg.CookiesPath, cfg.ExtractorArgs)
 	worker := queue.NewWorker(cfg, database, redisClient, dl)
 
 	ctx, cancel := context.WithCancel(context.Background())

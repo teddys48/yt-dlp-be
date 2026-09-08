@@ -49,6 +49,10 @@ CLEANUP_INTERVAL_HOURS=1
 FILE_RETENTION_HOURS=24
 LOG_LEVEL=info
 LOG_FORMAT=text
+
+# yt-dlp Bot Detection & Authentication Settings
+YTDLP_COOKIES_PATH=./cookies.txt
+YTDLP_EXTRACTOR_ARGS=youtube:player_client=android,web
 ```
 
 ---

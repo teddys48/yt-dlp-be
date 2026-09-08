@@ -33,6 +33,10 @@ type Config struct {
 	CleanupIntervalHour time.Duration
 	FileRetentionHours  time.Duration
 
+	// yt-dlp Extractor & Cookies Config
+	CookiesPath   string
+	ExtractorArgs string
+
 	// Logger Config
 	LogLevel  string
 	LogFormat string
@@ -43,18 +47,18 @@ func LoadConfig() *Config {
 	_ = godotenv.Load()
 
 	return &Config{
-		DBHost:              getEnv("DB_HOST", "localhost"),
-		DBPort:              getEnv("DB_PORT", "5432"),
-		DBUser:              getEnv("DB_USER", "postgres"),
-		DBPassword:          getEnv("DB_PASSWORD", "galau712"),
-		DBName:              getEnv("DB_NAME", "yt-dlp"),
-		DBSSLMode:           getEnv("DB_SSLMODE", "disable"),
+		DBHost:     getEnv("DB_HOST", "localhost"),
+		DBPort:     getEnv("DB_PORT", "5432"),
+		DBUser:     getEnv("DB_USER", "postgres"),
+		DBPassword: getEnv("DB_PASSWORD", "postgres"),
+		DBName:     getEnv("DB_NAME", "yt-dlp"),
+		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 
-		RedisHost:           getEnv("REDIS_HOST", "localhost"),
-		RedisPort:           getEnv("REDIS_PORT", "6379"),
-		RedisPassword:       getEnv("REDIS_PASSWORD", ""),
-		RedisDB:             getEnvAsInt("REDIS_DB", 0),
-		RedisTTLHours:       time.Duration(getEnvAsInt("REDIS_TTL_HOURS", 24)) * time.Hour,
+		RedisHost:     getEnv("REDIS_HOST", "localhost"),
+		RedisPort:     getEnv("REDIS_PORT", "6379"),
+		RedisPassword: getEnv("REDIS_PASSWORD", ""),
+		RedisDB:       getEnvAsInt("REDIS_DB", 0),
+		RedisTTLHours: time.Duration(getEnvAsInt("REDIS_TTL_HOURS", 24)) * time.Hour,
 
 		Port:                getEnv("PORT", "8080"),
 		DownloadDir:         getEnv("DOWNLOAD_DIR", "./downloads"),
@@ -63,6 +67,9 @@ func LoadConfig() *Config {
 		RateLimitWindowSec:  getEnvAsInt("RATE_LIMIT_WINDOW_SEC", 60),
 		CleanupIntervalHour: time.Duration(getEnvAsInt("CLEANUP_INTERVAL_HOURS", 1)) * time.Hour,
 		FileRetentionHours:  time.Duration(getEnvAsInt("FILE_RETENTION_HOURS", 24)) * time.Hour,
+
+		CookiesPath:   getEnv("YTDLP_COOKIES_PATH", "./cookies.txt"),
+		ExtractorArgs: getEnv("YTDLP_EXTRACTOR_ARGS", "youtube:player_client=android,web"),
 
 		LogLevel:  getEnv("LOG_LEVEL", "info"),
 		LogFormat: getEnv("LOG_FORMAT", "text"),

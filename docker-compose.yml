@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: galau712
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: yt-dlp
     ports:
       - "5432:5432"
@@ -45,7 +45,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: galau712
+      DB_PASSWORD: postgres
       DB_NAME: yt-dlp
       DB_SSLMODE: disable
       REDIS_HOST: redis
@@ -75,7 +75,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: galau712
+      DB_PASSWORD: postgres
       DB_NAME: yt-dlp
       DB_SSLMODE: disable
       REDIS_HOST: redis
